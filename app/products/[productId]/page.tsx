@@ -4,20 +4,21 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ShoppingBag, Share2, Truck, Shield, RotateCcw, Info, Package } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowLeft, ShoppingBag, Heart, Star, Truck, Shield, RotateCcw, Share2, Ruler, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProductGallery } from '@/components/ui/product-gallery';
-import { SizeGuide } from '@/components/ui/size-guide';
-import { ProductReviews } from '@/components/ui/product-reviews';
-import { WishlistButton } from '@/components/ui/wishlist-button';
-import { StockIndicator } from '@/components/ui/stock-indicator';
 import { supabase } from '@/lib/supabase';
 import { useCart } from '@/hooks/use-cart';
 import { cn } from '@/lib/utils';
+import { ProductGallery } from '@/components/ui/product-gallery';
+import { ProductReviews } from '@/components/ui/product-reviews';
+import { WishlistButton } from '@/components/ui/wishlist-button';
+import { StockIndicator } from '@/components/ui/stock-indicator';
+import { SizeGuide } from '@/components/ui/size-guide';
 
 interface Product {
   id: string;
@@ -37,26 +38,24 @@ interface Product {
   };
 }
 
-const productDetails = {
-  materials: [
-    'Premium leather upper',
-    'Breathable mesh lining',
-    'Cushioned EVA midsole',
-    'Durable rubber outsole',
-  ],
-  care: [
-    'Clean with damp cloth',
-    'Air dry at room temperature',
-    'Use leather conditioner monthly',
-    'Store in dust bag when not in use',
-  ],
-  sizing: [
-    'True to size fit',
-    'Medium width (D)',
-    'Half sizes available',
-    'Runs slightly narrow for wide feet',
-  ],
-};
+// Required for static export
+export async function generateStaticParams() {
+  try {
+    const { data: products } = await supabase
+      .from('products')
+      .select('id')
+      .eq('is_active', true);
+
+    if (!products) return [];
+
+    return products.map((product) => ({
+      productId: product.id,
+    }));
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [];
+  }
+}
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -64,8 +63,9 @@ export default function ProductDetailPage() {
   const productId = params.productId as string;
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
+  const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
-  const [selectedSize, setSelectedSize] = useState('');
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -103,40 +103,18 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
-    if (!selectedSize) {
-      alert('Please select a size before adding to cart');
-      return;
-    }
-
     for (let i = 0; i < quantity; i++) {
       addItem({
         id: product.id,
-        name: `${product.name} (Size ${selectedSize})`,
+        name: product.name,
         price: product.price,
         image: product.images[0] || '',
-        sku: `${product.sku}-${selectedSize}`,
+        sku: product.sku,
       });
     }
 
+    // Reset quantity after adding to cart
     setQuantity(1);
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.name,
-          text: product?.description,
-          url: window.location.href,
-        });
-      } catch (error) {
-        console.log('Error sharing:', error);
-      }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
-    }
   };
 
   if (loading) {
@@ -175,6 +153,8 @@ export default function ProductDetailPage() {
     ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
     : 0;
 
+  const sizes = ['6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12'];
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -198,10 +178,13 @@ export default function ProductDetailPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
-          <ProductGallery 
-            images={product.images} 
-            productName={product.name}
-          />
+          <div className="space-y-4">
+            <ProductGallery 
+              images={product.images} 
+              productName={product.name}
+              discount={discount}
+            />
+          </div>
 
           {/* Product Details */}
           <div className="space-y-6">
@@ -212,15 +195,20 @@ export default function ProductDetailPage() {
               <h1 className="text-3xl font-bold text-foreground mb-2">
                 {product.name}
               </h1>
-              
-              {/* Stock Indicator */}
-              <StockIndicator 
-                quantity={product.inventory_quantity}
-                lowStockThreshold={10}
-                showProgress={true}
-                maxStock={100}
-                className="mb-4"
-              />
+              <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={cn(
+                        "h-4 w-4",
+                        i < 4 ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                      )}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground">(4.0) • 127 reviews</span>
+              </div>
             </div>
 
             {/* Price */}
@@ -229,41 +217,40 @@ export default function ProductDetailPage() {
                 ${product.price.toFixed(2)}
               </span>
               {product.compare_at_price && product.compare_at_price > product.price && (
-                <>
-                  <span className="text-xl text-muted-foreground line-through">
-                    ${product.compare_at_price.toFixed(2)}
-                  </span>
-                  <Badge className="bg-destructive text-destructive-foreground">
-                    Save {discount}%
-                  </Badge>
-                </>
+                <span className="text-xl text-muted-foreground line-through">
+                  ${product.compare_at_price.toFixed(2)}
+                </span>
               )}
             </div>
+
+            {/* Stock Indicator */}
+            <StockIndicator quantity={product.inventory_quantity} />
 
             {/* Size Selection */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Size:</label>
-                <SizeGuide 
-                  selectedSize={selectedSize}
-                  onSizeSelect={setSelectedSize}
-                  category={product.category.slug}
-                />
+                <h3 className="font-semibold text-foreground">Size</h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowSizeGuide(true)}
+                  className="text-primary hover:text-primary/80"
+                >
+                  <Ruler className="h-4 w-4 mr-1" />
+                  Size Guide
+                </Button>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                {['7', '7.5', '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12'].map((size) => (
-                  <button
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {sizes.map((size) => (
+                  <Button
                     key={size}
+                    variant={selectedSize === size ? "default" : "outline"}
+                    size="sm"
                     onClick={() => setSelectedSize(size)}
-                    className={cn(
-                      "border rounded-md py-2 px-3 text-sm font-medium transition-colors",
-                      selectedSize === size
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border hover:border-primary"
-                    )}
+                    className="h-10"
                   >
                     {size}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -300,16 +287,17 @@ export default function ProductDetailPage() {
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   Add to Cart
                 </Button>
-                <WishlistButton 
-                  productId={product.id}
-                  productName={product.name}
-                  size="lg"
-                  variant="outline"
-                />
-                <Button size="lg" variant="outline" onClick={handleShare}>
+                <WishlistButton productId={product.id} />
+                <Button size="lg" variant="outline">
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
+
+              {!selectedSize && (
+                <p className="text-sm text-muted-foreground">
+                  Please select a size to add to cart
+                </p>
+              )}
             </div>
 
             {/* Product Info Cards */}
@@ -339,132 +327,118 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* Product Information Tabs */}
+        {/* Product Details Tabs */}
         <div className="mt-16">
           <Tabs defaultValue="description" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="description">Description</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="specifications">Specifications</TabsTrigger>
+              <TabsTrigger value="care">Care Instructions</TabsTrigger>
               <TabsTrigger value="reviews">Reviews</TabsTrigger>
-              <TabsTrigger value="shipping">Shipping</TabsTrigger>
             </TabsList>
             
             <TabsContent value="description" className="mt-6">
               <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-lg mb-4">Product Description</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-6">
+                    {product.description}
+                  </p>
+                  
+                  {product.features.length > 0 && (
                     <div>
-                      <h3 className="text-lg font-semibold mb-2">Product Description</h3>
-                      <p className="text-muted-foreground leading-relaxed">
-                        {product.description}
-                      </p>
+                      <h4 className="font-semibold mb-3">Key Features</h4>
+                      <ul className="space-y-2">
+                        {product.features.map((feature, index) => (
+                          <li key={index} className="flex items-center gap-2 text-muted-foreground">
+                            <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    
-                    {product.features.length > 0 && (
-                      <div>
-                        <h3 className="text-lg font-semibold mb-2">Key Features</h3>
-                        <ul className="space-y-2">
-                          {product.features.map((feature, index) => (
-                            <li key={index} className="flex items-center gap-2 text-muted-foreground">
-                              <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                              {feature}
-                            </li>
-                          ))}
-                        </ul>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="specifications" className="mt-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-lg mb-4">Specifications</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">SKU:</span>
+                        <span className="font-medium">{product.sku}</span>
                       </div>
-                    )}
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Category:</span>
+                        <span className="font-medium">{product.category.name}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Material:</span>
+                        <span className="font-medium">Premium Leather</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Sole Type:</span>
+                        <span className="font-medium">Rubber</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Weight:</span>
+                        <span className="font-medium">1.2 lbs</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Origin:</span>
+                        <span className="font-medium">Made in Italy</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Heel Height:</span>
+                        <span className="font-medium">1 inch</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-2">
+                        <span className="text-muted-foreground">Width:</span>
+                        <span className="font-medium">Medium (D)</span>
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
             
-            <TabsContent value="details" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-3 flex items-center gap-2">
-                      <Package className="h-4 w-4" />
-                      Materials
-                    </h3>
-                    <ul className="space-y-2">
-                      {productDetails.materials.map((material, index) => (
-                        <li key={index} className="text-sm text-muted-foreground">
-                          • {material}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-3 flex items-center gap-2">
-                      <Info className="h-4 w-4" />
-                      Sizing Information
-                    </h3>
-                    <ul className="space-y-2">
-                      {productDetails.sizing.map((info, index) => (
-                        <li key={index} className="text-sm text-muted-foreground">
-                          • {info}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-3 flex items-center gap-2">
-                      <Shield className="h-4 w-4" />
-                      Care Instructions
-                    </h3>
-                    <ul className="space-y-2">
-                      {productDetails.care.map((instruction, index) => (
-                        <li key={index} className="text-sm text-muted-foreground">
-                          • {instruction}
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="mt-6">
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold mb-4">Product Specifications</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">SKU:</span>
-                        <span className="font-medium">{product.sku}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Category:</span>
-                        <span className="font-medium">{product.category.name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Weight:</span>
-                        <span className="font-medium">1.2 lbs</span>
-                      </div>
+            <TabsContent value="care" className="mt-6">
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="font-semibold text-lg mb-4">Care Instructions</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2">Cleaning</h4>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>• Wipe with a damp cloth to remove surface dirt</li>
+                        <li>• Use leather cleaner for deeper cleaning</li>
+                        <li>• Allow to air dry naturally</li>
+                        <li>• Avoid direct heat or sunlight</li>
+                      </ul>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Origin:</span>
-                        <span className="font-medium">Made in Italy</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Warranty:</span>
-                        <span className="font-medium">1 Year</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Availability:</span>
-                        <span className={cn(
-                          "font-medium",
-                          product.inventory_quantity > 0 ? "text-green-600" : "text-red-600"
-                        )}>
-                          {product.inventory_quantity > 0 ? "In Stock" : "Out of Stock"}
-                        </span>
-                      </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Storage</h4>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>• Store in a cool, dry place</li>
+                        <li>• Use shoe trees to maintain shape</li>
+                        <li>• Keep away from moisture</li>
+                        <li>• Rotate wear to extend lifespan</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="font-medium mb-2">Maintenance</h4>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li>• Apply leather conditioner monthly</li>
+                        <li>• Polish regularly to maintain shine</li>
+                        <li>• Replace laces when worn</li>
+                        <li>• Professional cleaning recommended annually</li>
+                      </ul>
                     </div>
                   </div>
                 </CardContent>
@@ -472,65 +446,19 @@ export default function ProductDetailPage() {
             </TabsContent>
             
             <TabsContent value="reviews" className="mt-6">
-              <ProductReviews
-                productId={product.id}
-                averageRating={4.2}
-                totalReviews={75}
-                reviews={[]}
-              />
-            </TabsContent>
-            
-            <TabsContent value="shipping" className="mt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-4 flex items-center gap-2">
-                      <Truck className="h-5 w-5" />
-                      Shipping Information
-                    </h3>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <h4 className="font-medium">Standard Shipping (Free over $100)</h4>
-                        <p className="text-muted-foreground">2-3 business days • $9.99</p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Express Shipping</h4>
-                        <p className="text-muted-foreground">1-2 business days • $19.99</p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Same Day Delivery (Douala only)</h4>
-                        <p className="text-muted-foreground">Order by 2 PM • $29.99</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <h3 className="font-semibold mb-4 flex items-center gap-2">
-                      <RotateCcw className="h-5 w-5" />
-                      Return Policy
-                    </h3>
-                    <div className="space-y-3 text-sm">
-                      <div>
-                        <h4 className="font-medium">30-Day Returns</h4>
-                        <p className="text-muted-foreground">Free returns on unworn items</p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Easy Process</h4>
-                        <p className="text-muted-foreground">Print return label from your account</p>
-                      </div>
-                      <div>
-                        <h4 className="font-medium">Refund Timeline</h4>
-                        <p className="text-muted-foreground">5-7 business days after we receive your return</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <ProductReviews productId={product.id} />
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Size Guide Modal */}
+        {showSizeGuide && (
+          <SizeGuide 
+            isOpen={showSizeGuide}
+            onClose={() => setShowSizeGuide(false)}
+            category={product.category.name}
+          />
+        )}
       </div>
     </div>
   );
