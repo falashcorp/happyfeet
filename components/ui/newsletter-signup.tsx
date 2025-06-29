@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from 'react';
-import { Mail, Gift, Bell, CheckCircle } from 'lucide-react';
+import { Mail, Gift, Bell, Star, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 interface NewsletterSignupProps {
-  variant?: 'inline' | 'modal' | 'footer';
+  variant?: 'default' | 'footer' | 'popup';
   showBenefits?: boolean;
   className?: string;
 }
@@ -19,124 +19,88 @@ const benefits = [
   {
     icon: Gift,
     title: 'Exclusive Deals',
-    description: 'Get 10% off your first order and access to member-only sales',
+    description: 'Get access to member-only discounts and early sales',
   },
   {
     icon: Bell,
     title: 'New Arrivals',
-    description: 'Be the first to know about new collections and limited editions',
+    description: 'Be the first to know about our latest collections',
   },
   {
-    icon: Mail,
+    icon: Star,
     title: 'Style Tips',
     description: 'Receive personalized recommendations and styling advice',
   },
 ];
 
 export function NewsletterSignup({ 
-  variant = 'inline', 
+  variant = 'default', 
   showBenefits = true, 
   className 
 }: NewsletterSignupProps) {
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [preferences, setPreferences] = useState({
-    email: true,
-    whatsapp: false,
-    sms: false,
-  });
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!email) {
-      toast({
-        title: "Email Required",
-        description: "Please enter your email address.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (preferences.whatsapp && !phone) {
-      toast({
-        title: "Phone Number Required",
-        description: "Please enter your WhatsApp number.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!email) return;
 
     setIsLoading(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Store subscription data
-      const subscriptionData = {
-        email,
-        phone: preferences.whatsapp ? phone : null,
-        preferences,
-        subscribedAt: new Date().toISOString(),
-      };
-      
-      localStorage.setItem('newsletter_subscription', JSON.stringify(subscriptionData));
-      
-      setIsSubscribed(true);
-      
-      toast({
-        title: "Successfully Subscribed!",
-        description: "Welcome to the HappyFeet family. Check your email for a welcome gift!",
-      });
-    } catch (error) {
-      toast({
-        title: "Subscription Failed",
-        description: "Something went wrong. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: "Successfully subscribed!",
+      description: "Welcome to the HappyFeet family. Check your email for a welcome gift!",
+    });
+    
+    setEmail('');
+    setIsLoading(false);
   };
 
-  if (isSubscribed) {
+  if (variant === 'footer') {
     return (
-      <Card className={className}>
-        <CardContent className="pt-6 text-center">
-          <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">You're All Set!</h3>
-          <p className="text-muted-foreground mb-4">
-            Thank you for subscribing. Check your email for a special welcome offer!
-          </p>
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            10% OFF Welcome Code: WELCOME10
-          </Badge>
-        </CardContent>
-      </Card>
+      <div className={cn("text-center", className)}>
+        <h3 className="font-semibold text-lg mb-2">Stay in the Loop</h3>
+        <p className="text-muted-foreground text-sm mb-4">
+          Subscribe for exclusive deals and new arrivals
+        </p>
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="flex-1"
+            required
+          />
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Subscribing...' : 'Subscribe'}
+          </Button>
+        </form>
+      </div>
     );
   }
 
   return (
-    <Card className={className}>
+    <Card className={cn("", className)}>
       <CardHeader className="text-center">
-        <CardTitle className="flex items-center justify-center gap-2">
-          <Mail className="h-5 w-5" />
-          Stay Connected
-        </CardTitle>
-        <CardDescription>
-          Join our community for exclusive deals, new arrivals, and style inspiration
-        </CardDescription>
+        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Mail className="h-6 w-6 text-primary" />
+        </div>
+        <CardTitle className="text-2xl">Join Our Newsletter</CardTitle>
+        <p className="text-muted-foreground">
+          Get exclusive access to deals, new arrivals, and style inspiration
+        </p>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {showBenefits && (
           <div className="grid grid-cols-1 gap-4">
             {benefits.map((benefit, index) => (
-              <div key={index} className="flex items-start gap-3">
+              <div key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
                 <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
                   <benefit.icon className="h-4 w-4 text-primary" />
                 </div>
@@ -150,78 +114,19 @@ export function NewsletterSignup({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               type="email"
               placeholder="Enter your email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="pl-10"
               required
             />
           </div>
-
-          <div className="space-y-3">
-            <p className="text-sm font-medium">How would you like to hear from us?</p>
-            
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="email-pref"
-                  checked={preferences.email}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, email: checked as boolean }))
-                  }
-                />
-                <label htmlFor="email-pref" className="text-sm">
-                  Email newsletters and promotions
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="whatsapp-pref"
-                  checked={preferences.whatsapp}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, whatsapp: checked as boolean }))
-                  }
-                />
-                <label htmlFor="whatsapp-pref" className="text-sm">
-                  WhatsApp updates and exclusive offers
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="sms-pref"
-                  checked={preferences.sms}
-                  onCheckedChange={(checked) => 
-                    setPreferences(prev => ({ ...prev, sms: checked as boolean }))
-                  }
-                />
-                <label htmlFor="sms-pref" className="text-sm">
-                  SMS notifications for order updates
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {(preferences.whatsapp || preferences.sms) && (
-            <div>
-              <Input
-                type="tel"
-                placeholder="WhatsApp/Phone number (+237 6XX XXX XXX)"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                required={preferences.whatsapp || preferences.sms}
-              />
-            </div>
-          )}
-
-          <Button 
-            type="submit" 
-            className="w-full" 
-            disabled={isLoading}
-          >
+          
+          <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -229,17 +134,21 @@ export function NewsletterSignup({
               </>
             ) : (
               <>
-                <Mail className="mr-2 h-4 w-4" />
-                Subscribe & Get 10% Off
+                Subscribe Now
+                <ArrowRight className="ml-2 h-4 w-4" />
               </>
             )}
           </Button>
-
-          <p className="text-xs text-muted-foreground text-center">
-            By subscribing, you agree to our Privacy Policy and Terms of Service. 
-            You can unsubscribe at any time.
-          </p>
         </form>
+
+        <div className="text-center">
+          <Badge variant="secondary" className="text-xs">
+            🎁 Welcome gift included
+          </Badge>
+          <p className="text-xs text-muted-foreground mt-2">
+            Unsubscribe anytime. We respect your privacy.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
