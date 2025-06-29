@@ -38,16 +38,6 @@ interface Category {
   slug: string;
 }
 
-export async function generateStaticParams() {
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('slug');
-
-  return categories?.map((category) => ({
-    slug: category.slug,
-  })) || [];
-}
-
 export default function CategoryPage() {
   const params = useParams();
   const slug = params.slug as string;
