@@ -1,16 +1,12 @@
 "use client";
 
 import { useState } from 'react';
-import { Star, ThumbsUp, ThumbsDown, MessageCircle, Filter } from 'lucide-react';
+import { Star, ThumbsUp, ThumbsDown, Filter, User, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
 interface ProductReviewsProps {
@@ -21,134 +17,128 @@ interface ProductReviewsProps {
 const mockReviews = [
   {
     id: '1',
-    user: {
-      name: 'Sarah Johnson',
-      avatar: 'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg',
-      verified: true,
-    },
+    user: 'Sarah M.',
     rating: 5,
-    title: 'Excellent quality and comfort!',
-    content: 'These shoes exceeded my expectations. The comfort level is outstanding, and the quality of materials is top-notch. I\'ve been wearing them daily for 3 months and they still look brand new.',
+    title: 'Absolutely love these shoes!',
+    content: 'Perfect fit, great quality, and super comfortable. I\'ve been wearing them daily for 3 months and they still look brand new. Highly recommend!',
     date: '2024-01-15',
+    verified: true,
     helpful: 12,
+    notHelpful: 1,
     size: '8',
     fit: 'True to size',
-    images: ['https://images.pexels.com/photos/2529148/pexels-photo-2529148.jpeg'],
   },
   {
     id: '2',
-    user: {
-      name: 'Michael Chen',
-      avatar: 'https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg',
-      verified: true,
-    },
+    user: 'Mike R.',
     rating: 4,
-    title: 'Great shoes, runs slightly large',
-    content: 'Love the style and comfort of these shoes. Only issue is they run about half a size large, so I\'d recommend sizing down. Otherwise, fantastic quality.',
+    title: 'Great shoes, minor sizing issue',
+    content: 'Really comfortable and well-made shoes. Only issue is they run slightly small, so I\'d recommend going up half a size. Otherwise, excellent quality.',
     date: '2024-01-10',
+    verified: true,
     helpful: 8,
+    notHelpful: 2,
     size: '10',
-    fit: 'Runs large',
+    fit: 'Runs small',
   },
   {
     id: '3',
-    user: {
-      name: 'Emma Wilson',
-      avatar: 'https://images.pexels.com/photos/1181686/pexels-photo-1181686.jpeg',
-      verified: false,
-    },
+    user: 'Emma L.',
     rating: 5,
     title: 'Perfect for daily wear',
-    content: 'I work on my feet all day and these shoes provide excellent support. The cushioning is amazing and my feet don\'t hurt at the end of the day.',
-    date: '2024-01-05',
+    content: 'These shoes are incredibly comfortable for long days on my feet. The cushioning is excellent and the style goes with everything. Worth every penny!',
+    date: '2024-01-08',
+    verified: false,
     helpful: 15,
+    notHelpful: 0,
     size: '7.5',
     fit: 'True to size',
   },
   {
     id: '4',
-    user: {
-      name: 'David Rodriguez',
-      avatar: null,
-      verified: true,
-    },
+    user: 'David K.',
     rating: 3,
     title: 'Good but not great',
-    content: 'Decent shoes for the price. The style is nice but I expected better durability. After 2 months of regular use, they\'re showing some wear.',
-    date: '2024-01-01',
-    helpful: 3,
-    size: '9.5',
+    content: 'Decent shoes for the price. Comfortable enough but the material feels a bit cheap. They\'re okay for casual wear but I wouldn\'t use them for sports.',
+    date: '2024-01-05',
+    verified: true,
+    helpful: 5,
+    notHelpful: 3,
+    size: '9',
+    fit: 'True to size',
+  },
+  {
+    id: '5',
+    user: 'Lisa T.',
+    rating: 5,
+    title: 'Exceeded expectations!',
+    content: 'I was hesitant to order online but these shoes are amazing! The quality is top-notch and they\'re so comfortable. Fast shipping too. Will definitely order again.',
+    date: '2024-01-03',
+    verified: true,
+    helpful: 20,
+    notHelpful: 1,
+    size: '6.5',
     fit: 'True to size',
   },
 ];
 
 const ratingDistribution = [
-  { stars: 5, count: 45, percentage: 60 },
-  { stars: 4, count: 20, percentage: 27 },
-  { stars: 3, count: 7, percentage: 9 },
-  { stars: 2, count: 2, percentage: 3 },
-  { stars: 1, count: 1, percentage: 1 },
+  { stars: 5, count: 85, percentage: 68 },
+  { stars: 4, count: 25, percentage: 20 },
+  { stars: 3, count: 10, percentage: 8 },
+  { stars: 2, count: 3, percentage: 2 },
+  { stars: 1, count: 2, percentage: 2 },
 ];
 
 export function ProductReviews({ productId }: ProductReviewsProps) {
   const [sortBy, setSortBy] = useState('newest');
-  const [filterRating, setFilterRating] = useState('all');
-  const [showWriteReview, setShowWriteReview] = useState(false);
-  const [newReview, setNewReview] = useState({
-    rating: 0,
-    title: '',
-    content: '',
-    size: '',
-    fit: '',
+  const [filterBy, setFilterBy] = useState('all');
+  const [helpfulVotes, setHelpfulVotes] = useState<Record<string, 'helpful' | 'not-helpful' | null>>({});
+
+  const averageRating = 4.5;
+  const totalReviews = 125;
+
+  const handleHelpfulVote = (reviewId: string, type: 'helpful' | 'not-helpful') => {
+    setHelpfulVotes(prev => ({
+      ...prev,
+      [reviewId]: prev[reviewId] === type ? null : type
+    }));
+  };
+
+  const filteredReviews = mockReviews.filter(review => {
+    if (filterBy === 'all') return true;
+    if (filterBy === 'verified') return review.verified;
+    if (filterBy === '5-star') return review.rating === 5;
+    if (filterBy === '4-star') return review.rating === 4;
+    if (filterBy === '3-star') return review.rating === 3;
+    if (filterBy === '2-star') return review.rating === 2;
+    if (filterBy === '1-star') return review.rating === 1;
+    return true;
   });
 
-  const totalReviews = ratingDistribution.reduce((sum, item) => sum + item.count, 0);
-  const averageRating = ratingDistribution.reduce((sum, item) => sum + (item.stars * item.count), 0) / totalReviews;
-
-  const filteredReviews = mockReviews
-    .filter(review => filterRating === 'all' || review.rating.toString() === filterRating)
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'newest':
-          return new Date(b.date).getTime() - new Date(a.date).getTime();
-        case 'oldest':
-          return new Date(a.date).getTime() - new Date(b.date).getTime();
-        case 'highest':
-          return b.rating - a.rating;
-        case 'lowest':
-          return a.rating - b.rating;
-        case 'helpful':
-          return b.helpful - a.helpful;
-        default:
-          return 0;
-      }
-    });
-
-  const handleSubmitReview = () => {
-    // In a real app, this would submit to your API
-    console.log('Submitting review:', newReview);
-    setShowWriteReview(false);
-    setNewReview({ rating: 0, title: '', content: '', size: '', fit: '' });
-  };
+  const sortedReviews = [...filteredReviews].sort((a, b) => {
+    if (sortBy === 'newest') return new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (sortBy === 'oldest') return new Date(a.date).getTime() - new Date(b.date).getTime();
+    if (sortBy === 'highest') return b.rating - a.rating;
+    if (sortBy === 'lowest') return a.rating - b.rating;
+    if (sortBy === 'helpful') return b.helpful - a.helpful;
+    return 0;
+  });
 
   return (
     <div className="space-y-6">
       {/* Review Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Customer Reviews</span>
-            <Button onClick={() => setShowWriteReview(!showWriteReview)}>
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Write Review
-            </Button>
-          </CardTitle>
+          <CardTitle>Customer Reviews</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Overall Rating */}
             <div className="text-center">
-              <div className="text-4xl font-bold mb-2">{averageRating.toFixed(1)}</div>
+              <div className="text-4xl font-bold text-foreground mb-2">
+                {averageRating}
+              </div>
               <div className="flex items-center justify-center mb-2">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
@@ -160,16 +150,20 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
                   />
                 ))}
               </div>
-              <p className="text-muted-foreground">Based on {totalReviews} reviews</p>
+              <p className="text-muted-foreground">
+                Based on {totalReviews} reviews
+              </p>
             </div>
 
             {/* Rating Distribution */}
             <div className="space-y-2">
-              {ratingDistribution.map((item) => (
-                <div key={item.stars} className="flex items-center gap-2">
-                  <span className="text-sm w-8">{item.stars}★</span>
-                  <Progress value={item.percentage} className="flex-1" />
-                  <span className="text-sm text-muted-foreground w-8">{item.count}</span>
+              {ratingDistribution.map((rating) => (
+                <div key={rating.stars} className="flex items-center gap-2">
+                  <span className="text-sm w-8">{rating.stars}★</span>
+                  <Progress value={rating.percentage} className="flex-1" />
+                  <span className="text-sm text-muted-foreground w-8">
+                    {rating.count}
+                  </span>
                 </div>
               ))}
             </div>
@@ -177,191 +171,108 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         </CardContent>
       </Card>
 
-      {/* Write Review Form */}
-      {showWriteReview && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Write a Review</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="review-rating">Rating *</Label>
-                <div className="flex gap-1 mt-1">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setNewReview({ ...newReview, rating: i + 1 })}
-                      className="p-1"
-                    >
-                      <Star
-                        className={cn(
-                          "h-6 w-6 transition-colors",
-                          i < newReview.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground hover:text-yellow-400"
-                        )}
-                      />
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="review-size">Size Purchased</Label>
-                <Select value={newReview.size} onValueChange={(value) => setNewReview({ ...newReview, size: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select size" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['6', '6.5', '7', '7.5', '8', '8.5', '9', '9.5', '10', '10.5', '11', '11.5', '12'].map((size) => (
-                      <SelectItem key={size} value={size}>{size}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="review-title">Review Title *</Label>
-                <Input
-                  id="review-title"
-                  value={newReview.title}
-                  onChange={(e) => setNewReview({ ...newReview, title: e.target.value })}
-                  placeholder="Summarize your experience"
-                />
-              </div>
-              <div>
-                <Label htmlFor="review-fit">How does it fit?</Label>
-                <Select value={newReview.fit} onValueChange={(value) => setNewReview({ ...newReview, fit: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select fit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="runs-small">Runs small</SelectItem>
-                    <SelectItem value="true-to-size">True to size</SelectItem>
-                    <SelectItem value="runs-large">Runs large</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="review-content">Your Review *</Label>
-              <Textarea
-                id="review-content"
-                value={newReview.content}
-                onChange={(e) => setNewReview({ ...newReview, content: e.target.value })}
-                placeholder="Tell others about your experience with this product"
-                rows={4}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleSubmitReview} disabled={!newReview.rating || !newReview.title || !newReview.content}>
-                Submit Review
-              </Button>
-              <Button variant="outline" onClick={() => setShowWriteReview(false)}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Filters and Sort */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex gap-2">
-          <Select value={filterRating} onValueChange={setFilterRating}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Filter by rating" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All ratings</SelectItem>
-              <SelectItem value="5">5 stars</SelectItem>
-              <SelectItem value="4">4 stars</SelectItem>
-              <SelectItem value="3">3 stars</SelectItem>
-              <SelectItem value="2">2 stars</SelectItem>
-              <SelectItem value="1">1 star</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      {/* Filters and Sorting */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Select value={filterBy} onValueChange={setFilterBy}>
+          <SelectTrigger className="w-full sm:w-48">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Filter reviews" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Reviews</SelectItem>
+            <SelectItem value="verified">Verified Only</SelectItem>
+            <SelectItem value="5-star">5 Star</SelectItem>
+            <SelectItem value="4-star">4 Star</SelectItem>
+            <SelectItem value="3-star">3 Star</SelectItem>
+            <SelectItem value="2-star">2 Star</SelectItem>
+            <SelectItem value="1-star">1 Star</SelectItem>
+          </SelectContent>
+        </Select>
 
         <Select value={sortBy} onValueChange={setSortBy}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-full sm:w-48">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="oldest">Oldest first</SelectItem>
-            <SelectItem value="highest">Highest rated</SelectItem>
-            <SelectItem value="lowest">Lowest rated</SelectItem>
-            <SelectItem value="helpful">Most helpful</SelectItem>
+            <SelectItem value="newest">Newest First</SelectItem>
+            <SelectItem value="oldest">Oldest First</SelectItem>
+            <SelectItem value="highest">Highest Rated</SelectItem>
+            <SelectItem value="lowest">Lowest Rated</SelectItem>
+            <SelectItem value="helpful">Most Helpful</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Reviews List */}
       <div className="space-y-4">
-        {filteredReviews.map((review) => (
+        {sortedReviews.map((review) => (
           <Card key={review.id}>
             <CardContent className="p-6">
-              <div className="flex items-start gap-4">
-                <Avatar>
-                  <AvatarImage src={review.user.avatar || undefined} />
-                  <AvatarFallback>{review.user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                </Avatar>
-
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{review.user.name}</span>
-                    {review.user.verified && (
-                      <Badge variant="secondary" className="text-xs">Verified Purchase</Badge>
-                    )}
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(review.date).toLocaleDateString()}
-                    </span>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-primary" />
                   </div>
-
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            "h-4 w-4",
-                            i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex gap-4 text-sm text-muted-foreground">
-                      <span>Size: {review.size}</span>
-                      <span>Fit: {review.fit}</span>
-                    </div>
-                  </div>
-
                   <div>
-                    <h4 className="font-medium mb-2">{review.title}</h4>
-                    <p className="text-muted-foreground leading-relaxed">{review.content}</p>
-                  </div>
-
-                  {review.images && review.images.length > 0 && (
-                    <div className="flex gap-2">
-                      {review.images.map((image, index) => (
-                        <div key={index} className="w-16 h-16 rounded-md overflow-hidden bg-muted">
-                          <img src={image} alt={`Review image ${index + 1}`} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{review.user}</span>
+                      {review.verified && (
+                        <Badge variant="secondary" className="text-xs">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Verified
+                        </Badge>
+                      )}
                     </div>
-                  )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex items-center">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-4 w-4",
+                              i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(review.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right text-sm text-muted-foreground">
+                  <div>Size: {review.size}</div>
+                  <div>Fit: {review.fit}</div>
+                </div>
+              </div>
 
-                  <div className="flex items-center gap-4 pt-2">
-                    <Button variant="ghost" size="sm">
-                      <ThumbsUp className="mr-1 h-3 w-3" />
-                      Helpful ({review.helpful})
+              <h4 className="font-semibold mb-2">{review.title}</h4>
+              <p className="text-muted-foreground mb-4 leading-relaxed">
+                {review.content}
+              </p>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-muted-foreground">
+                    Was this helpful?
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={helpfulVotes[review.id] === 'helpful' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleHelpfulVote(review.id, 'helpful')}
+                    >
+                      <ThumbsUp className="h-3 w-3 mr-1" />
+                      {review.helpful + (helpfulVotes[review.id] === 'helpful' ? 1 : 0)}
                     </Button>
-                    <Button variant="ghost" size="sm">
-                      <ThumbsDown className="mr-1 h-3 w-3" />
-                      Not helpful
+                    <Button
+                      variant={helpfulVotes[review.id] === 'not-helpful' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleHelpfulVote(review.id, 'not-helpful')}
+                    >
+                      <ThumbsDown className="h-3 w-3 mr-1" />
+                      {review.notHelpful + (helpfulVotes[review.id] === 'not-helpful' ? 1 : 0)}
                     </Button>
                   </div>
                 </div>
@@ -371,13 +282,12 @@ export function ProductReviews({ productId }: ProductReviewsProps) {
         ))}
       </div>
 
-      {filteredReviews.length === 0 && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-muted-foreground">No reviews found matching your criteria.</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Load More */}
+      <div className="text-center">
+        <Button variant="outline">
+          Load More Reviews
+        </Button>
+      </div>
     </div>
   );
 }
