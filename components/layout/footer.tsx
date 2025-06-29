@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin } from 'lucide-react';
+import { NewsletterSignup } from '@/components/ui/newsletter-signup';
 
 const footerSections = [
   {
@@ -31,11 +32,51 @@ const footerSections = [
   },
 ];
 
+const shippingInfo = [
+  {
+    title: 'Free Shipping',
+    description: 'On orders over $100',
+    icon: '🚚',
+  },
+  {
+    title: '30-Day Returns',
+    description: 'Easy return policy',
+    icon: '↩️',
+  },
+  {
+    title: 'Secure Payment',
+    description: 'SSL encrypted checkout',
+    icon: '🔒',
+  },
+  {
+    title: '24/7 Support',
+    description: 'Customer service',
+    icon: '💬',
+  },
+];
+
 export function Footer() {
   return (
     <footer className="bg-background border-t border-border">
+      {/* Shipping Info Bar */}
+      <div className="bg-muted/30 py-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {shippingInfo.map((info, index) => (
+              <div key={index} className="flex items-center gap-3 text-center md:text-left">
+                <span className="text-2xl">{info.icon}</span>
+                <div>
+                  <h4 className="font-medium text-sm">{info.title}</h4>
+                  <p className="text-xs text-muted-foreground">{info.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center space-x-2 mb-4">
@@ -53,7 +94,7 @@ export function Footer() {
             <div className="space-y-2 mb-6">
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                <span>Douala, Cameroon</span>
+                <span>Douala, Cameroon - Akwa District</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                 <Phone className="h-4 w-4" />
@@ -99,6 +140,13 @@ export function Footer() {
           ))}
         </div>
 
+        {/* Newsletter Signup */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <div className="max-w-md mx-auto">
+            <NewsletterSignup variant="footer" showBenefits={false} />
+          </div>
+        </div>
+
         {/* Bottom Section */}
         <div className="border-t border-border mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center">
           <p className="text-sm text-muted-foreground">
@@ -110,6 +158,9 @@ export function Footer() {
             </Link>
             <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">
               Terms of Service
+            </Link>
+            <Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground">
+              Cookie Policy
             </Link>
           </div>
         </div>
