@@ -38,6 +38,24 @@ interface Category {
   slug: string;
 }
 
+// Generate static params for all category slugs
+export async function generateStaticParams() {
+  try {
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('slug');
+
+    if (!categories) return [];
+
+    return categories.map((category) => ({
+      slug: category.slug,
+    }));
+  } catch (error) {
+    console.error('Error generating static params:', error);
+    return [];
+  }
+}
+
 export default function CategoryPage() {
   const params = useParams();
   const slug = params.slug as string;
