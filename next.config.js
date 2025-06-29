@@ -1,10 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   eslint: {
     ignoreDuringBuilds: true,
   },
-  images: { unoptimized: true },
+  images: { 
+    unoptimized: true,
+    domains: ['images.pexels.com']
+  },
+  // Remove output: 'export' to fix the generateStaticParams error
+  // output: 'export',
 };
 
 module.exports = nextConfig;

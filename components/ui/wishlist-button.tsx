@@ -8,11 +8,17 @@ import { cn } from '@/lib/utils';
 
 interface WishlistButtonProps {
   productId: string;
-  size?: 'sm' | 'lg';
+  size?: 'sm' | 'default' | 'lg' | 'icon';
   variant?: 'default' | 'outline' | 'ghost';
+  className?: string;
 }
 
-export function WishlistButton({ productId, size = 'lg', variant = 'outline' }: WishlistButtonProps) {
+export function WishlistButton({ 
+  productId, 
+  size = 'lg', 
+  variant = 'outline',
+  className 
+}: WishlistButtonProps) {
   const [isInWishlist, setIsInWishlist] = useState(false);
   const { toast } = useToast();
 
@@ -42,7 +48,7 @@ export function WishlistButton({ productId, size = 'lg', variant = 'outline' }: 
       
       toast({
         title: "Added to Wishlist",
-        description: "Item has been added to your wishlist.",
+        description: "Item has been saved to your wishlist.",
       });
     }
 
@@ -52,21 +58,19 @@ export function WishlistButton({ productId, size = 'lg', variant = 'outline' }: 
 
   return (
     <Button
-      size={size === 'sm' ? 'icon' : 'lg'}
       variant={variant}
+      size={size}
       onClick={toggleWishlist}
-      className={cn(
-        "transition-colors",
-        isInWishlist && "text-red-500 hover:text-red-600"
-      )}
+      className={cn(className)}
     >
       <Heart 
         className={cn(
-          size === 'sm' ? "h-4 w-4" : "h-4 w-4",
-          isInWishlist && "fill-current"
+          "h-4 w-4",
+          size === 'icon' ? "" : "mr-2",
+          isInWishlist && "fill-current text-red-500"
         )} 
       />
-      {size === 'lg' && <span className="sr-only">Add to wishlist</span>}
+      {size !== 'icon' && (isInWishlist ? 'Saved' : 'Save')}
     </Button>
   );
 }
